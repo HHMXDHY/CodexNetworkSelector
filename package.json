@@ -1,0 +1,64 @@
+{
+  "name": "codex-network-selector",
+  "productName": "Codex 网络稳定选择器",
+  "version": "1.0.0",
+  "description": "自动检测 Clash/Mihomo 节点的 Codex API 与 WebSocket 稳定性并选择可靠节点",
+  "main": "src/main.js",
+  "author": "Codex Network Selector",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.js",
+    "pack:win": "electron-builder --win nsis --config.artifactName=Codex-Network-Selector-${version}-Windows-Setup.${ext} && electron-builder --win portable --config.artifactName=Codex-Network-Selector-${version}-Windows-Portable.${ext}",
+    "pack:mac": "electron-builder --mac dmg --config.artifactName=Codex-Network-Selector-${version}-macOS.${ext} && electron-builder --mac zip --config.artifactName=Codex-Network-Selector-${version}-macOS.${ext}",
+    "dist": "electron-builder -mw"
+  },
+  "dependencies": {
+    "undici": "^7.16.0"
+  },
+  "devDependencies": {
+    "electron": "^39.2.4",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.codex.networkselector",
+    "productName": "Codex 网络稳定选择器",
+    "artifactName": "Codex-Network-Selector-${version}-${os}-${arch}.${ext}",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "package.json",
+      "CHANGELOG.md",
+      "LICENSE"
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Codex 网络稳定选择器"
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.utilities",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "icon": "assets/icon.png"
+    },
+    "dmg": {
+      "title": "Codex 网络稳定选择器 ${version}"
+    }
+  }
+}

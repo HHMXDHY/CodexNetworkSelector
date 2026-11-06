@@ -1,0 +1,10 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Codex 网络稳定选择器</title><link rel="stylesheet" href="app.css"></head>
+<body><main class="wrap">
+<header><div><div class="eyebrow">CODEX CONNECTION HEALTH</div><h1>Codex 网络稳定选择器 <small id="version"></small></h1><p>自动发现 Clash/Mihomo · API + WebSocket · 成功率优先 · P90 与抖动评分</p></div><div class="actions"><button id="settingsBtn">设置</button><button class="primary" id="runBtn">开始检测</button></div></header>
+<section class="cards"><article class="wide"><label>检测进度</label><div class="bar"><i id="fill"></i></div><div class="spread"><span id="phase">等待开始</span><span id="progress">0 / 0</span></div></article><article><label>Clash 连接</label><strong id="endpoint">未检测</strong></article><article><label>候选节点</label><strong id="pool">0</strong></article><article><label>合格节点</label><strong id="eligible">0</strong></article><article><label>预计剩余</label><strong id="eta">—</strong></article></section>
+<div class="decision" id="decision">点击“开始检测”，软件会自动寻找 Clash/Mihomo。</div>
+<section class="table"><table><thead><tr><th>节点</th><th>状态</th><th>API 成功</th><th>API P90</th><th>WS 成功</th><th>WS P90</th><th>抖动</th><th>评分</th></tr></thead><tbody id="rows"></tbody></table></section>
+<footer>不调用 curl，不弹控制台。香港、俄罗斯等 OpenAI 不支持地区与订阅信息伪节点会自动排除。</footer>
+</main>
+<dialog id="settings"><form method="dialog"><h2>检测设置</h2><div class="grid"><label>代理组<input id="groupName"></label><label>检测轮数<input id="rounds" type="number" min="2" max="20"></label><label>单次超时（毫秒）<input id="timeoutMs" type="number" min="1000" max="20000"></label><label>并发数<input id="parallelism" type="number" min="1" max="32"></label><label>P90 上限（毫秒）<input id="maximumP90Ms" type="number" min="500" max="20000"></label><label>Clash Secret（可空）<input id="secret" type="password"></label></div><label class="check"><input id="autoSwitch" type="checkbox">检测完成后自动切换到通过真实验收的最佳节点</label><div class="dialog-actions"><button value="cancel">取消</button><button class="primary" id="saveBtn" value="default">保存</button></div></form></dialog>
+<script src="renderer.js"></script></body></html>
