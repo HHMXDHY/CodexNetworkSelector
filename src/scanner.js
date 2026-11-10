@@ -1,5 +1,5 @@
 const { request: httpRequest, ProxyAgent } = require('undici');
-const { getInventory, delay, select, getConfig } = require('./clash-client');
+const { getInventory, delay, select, getConfig, currentSelection, selectorStates } = require('./clash-client');
 
 const UNSUPPORTED = ['香港', 'HK-', 'HKT-', '俄罗斯', 'RU-'];
 const META = ['剩余流量', '套餐到期', '官网', '更新订阅'];
@@ -40,8 +40,16 @@ async function actualProbe(url, dispatcher, websocket, timeoutMs) {
   } catch { return false; }
 }
 
+async function applyRoute(endpoint, route) {
+  for (const step of [...route].reverse()) await select(endpoint, step.group, step.selected);
+}
+
+async function restoreSelectors(endpoint, states) {
+  for (const [group, selected] of Object.entries(states).reverse()) await select(endpoint, group, selected);
+}
+
 async function verifyCandidate(endpoint, settings, candidate) {
-  await select(endpoint, settings.groupName, candidate);
+  await applyRoute(endpoint, candidate.route);
   await new Promise((resolve) => setTimeout(resolve, 700));
   const config = await getConfig(endpoint);
   const port = Number(config['mixed-port'] || config.port || settings.proxyPort || 7897);
@@ -60,11 +68,11 @@ async function verifyCandidate(endpoint, settings, candidate) {
 
 async function scan(endpoint, settings, onUpdate = () => {}) {
   const inventory = await getInventory(endpoint, settings.groupName);
-  const excluded = inventory.nodes.filter((name) => !allowed(name));
-  const candidates = inventory.nodes.filter(allowed);
-  const rows = Object.fromEntries(candidates.map((node) => [node, { node, api: [], websocket: [], completed: 0, expected: settings.rounds * 2 }]));
+  const excluded = inventory.candidates.filter((candidate) => !allowed(candidate.node)).map((candidate) => candidate.node);
+  const candidates = inventory.candidates.filter((candidate) => allowed(candidate.node));
+  const rows = Object.fromEntries(candidates.map(({ node }) => [node, { node, api: [], websocket: [], completed: 0, expected: settings.rounds * 2 }]));
   const jobs = [];
-  for (const node of candidates) for (const [kind, url] of [['api', settings.apiUrl], ['websocket', settings.wsUrl]]) for (let i = 0; i < settings.rounds; i++) jobs.push({ node, kind, url });
+  for (const { node } of candidates) for (const [kind, url] of [['api', settings.apiUrl], ['websocket', settings.wsUrl]]) for (let i = 0; i < settings.rounds; i++) jobs.push({ node, kind, url });
   let completed = 0;
   const started = Date.now();
   onUpdate({ phase: 'probing', candidates: candidates.length, excluded, completed, total: jobs.length, rows: Object.values(rows) });
@@ -82,22 +90,25 @@ async function scan(endpoint, settings, onUpdate = () => {}) {
   }).sort((a, b) => Number(b.eligible) - Number(a.eligible) || a.score - b.score);
   const eligible = reports.filter((r) => r.eligible);
   const best = eligible[0];
-  let selected = inventory.group.now, decision = 'keep', reason = best ? '当前节点已是最佳节点。' : '没有节点通过稳定门槛，保持当前节点。';
-  if (best && best.node !== inventory.group.now && settings.autoSwitch) {
-    for (const candidate of eligible) {
+  const previous = currentSelection(inventory.proxies, settings.groupName);
+  const originalStates = selectorStates(inventory.proxies, inventory.candidates);
+  let selected = previous, decision = 'keep', reason = best ? '当前节点已是最佳节点。' : '没有节点通过稳定门槛，保持当前节点。';
+  if (best && best.node !== previous && settings.autoSwitch) {
+    for (const report of eligible) {
+      const candidate = candidates.find((item) => item.node === report.node);
       onUpdate({ phase: 'verifying', message: `真实验收 ${candidate.node}`, completed: jobs.length, total: jobs.length, candidates: candidates.length, excluded, rows: reports });
-      if (await verifyCandidate(endpoint, settings, candidate.node)) {
+      if (await verifyCandidate(endpoint, settings, candidate)) {
         selected = candidate.node; decision = 'switch'; reason = '候选节点通过 API 与 WebSocket 真实验收，已完成切换。';
         break;
       }
     }
     if (decision !== 'switch') {
-      await select(endpoint, settings.groupName, inventory.group.now);
+      await restoreSelectors(endpoint, originalStates);
       reason = '候选节点未通过真实传输验收，已恢复原节点。';
     }
   }
-  const result = { phase: 'complete', completed: jobs.length, total: jobs.length, candidates: candidates.length, excluded, rows: reports, previous: inventory.group.now, selected, decision, reason, generatedAt: new Date().toISOString() };
+  const result = { phase: 'complete', completed: jobs.length, total: jobs.length, candidates: candidates.length, excluded, rows: reports, previous, selected, decision, reason, generatedAt: new Date().toISOString() };
   onUpdate(result); return result;
 }
 
-module.exports = { scan, metrics, allowed };
+module.exports = { scan, metrics, allowed, applyRoute, restoreSelectors };

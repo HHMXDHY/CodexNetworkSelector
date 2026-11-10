@@ -1,6 +1,6 @@
 # Codex 网络稳定选择器
 
-跨平台桌面工具，自动发现 Clash/Mihomo，测试代理组内节点对 Codex/ChatGPT API 与 WebSocket 的稳定性，并在真实传输验收后选择最佳节点。
+跨平台桌面工具，自动发现 Clash/Mihomo，递归展开代理组及其嵌套组，测试节点对 Codex/ChatGPT API 与 WebSocket 的稳定性，并在真实传输验收后选择最佳节点。
 
 ## 当前版本
 

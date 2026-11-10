@@ -69,8 +69,47 @@ async function getInventory(endpoint, groupName) {
   const proxies = (await request(endpoint, 'GET', '/proxies')).proxies || {};
   const group = proxies[groupName];
   if (!group || !Array.isArray(group.all)) throw new Error(`没有找到代理组“${groupName}”`);
-  const nodes = group.all.filter((name) => NODE_TYPES.has(proxies[name]?.type));
-  return { proxies, group, nodes };
+  const candidates = expandCandidates(proxies, groupName);
+  return { proxies, group, candidates, nodes: candidates.map((candidate) => candidate.node) };
+}
+
+function expandCandidates(proxies, rootGroupName) {
+  const found = new Map();
+
+  function visit(groupName, route, ancestors) {
+    if (ancestors.has(groupName)) return;
+    const group = proxies[groupName];
+    if (!group || !Array.isArray(group.all)) return;
+    const nextAncestors = new Set(ancestors).add(groupName);
+    for (const name of group.all) {
+      const proxy = proxies[name];
+      if (!proxy) continue;
+      const nextRoute = [...route, { group: groupName, selected: name }];
+      if (NODE_TYPES.has(proxy.type)) {
+        const previous = found.get(name);
+        if (!previous || nextRoute.length < previous.route.length) found.set(name, { node: name, route: nextRoute });
+      } else if (Array.isArray(proxy.all)) {
+        visit(name, nextRoute, nextAncestors);
+      }
+    }
+  }
+
+  visit(rootGroupName, [], new Set());
+  return [...found.values()];
+}
+
+function currentSelection(proxies, groupName, ancestors = new Set()) {
+  if (ancestors.has(groupName)) return groupName;
+  const group = proxies[groupName];
+  if (!group?.now) return groupName;
+  if (!Array.isArray(proxies[group.now]?.all)) return group.now;
+  return currentSelection(proxies, group.now, new Set(ancestors).add(groupName));
+}
+
+function selectorStates(proxies, candidates) {
+  const names = new Set();
+  for (const candidate of candidates) for (const step of candidate.route) names.add(step.group);
+  return Object.fromEntries([...names].map((name) => [name, proxies[name]?.now]).filter(([, now]) => now));
 }
 
 async function delay(endpoint, node, url, timeoutMs) {
@@ -87,4 +126,4 @@ async function select(endpoint, groupName, node) {
 
 async function getConfig(endpoint) { return request(endpoint, 'GET', '/configs'); }
 
-module.exports = { discover, getInventory, delay, select, getConfig, NODE_TYPES };
+module.exports = { discover, getInventory, delay, select, getConfig, NODE_TYPES, expandCandidates, currentSelection, selectorStates };
