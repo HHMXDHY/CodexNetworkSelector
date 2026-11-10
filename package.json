@@ -1,7 +1,7 @@
 {
   "name": "codex-network-selector",
   "productName": "Codex 网络稳定选择器",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "自动检测 Clash/Mihomo 节点的 Codex API 与 WebSocket 稳定性并选择可靠节点",
   "main": "src/main.js",
   "author": "Codex Network Selector",
@@ -9,8 +9,8 @@
   "scripts": {
     "start": "electron .",
     "test": "node --test test/*.test.js",
-    "pack:win": "electron-builder --win nsis --config.artifactName=Codex-Network-Selector-${version}-Windows-Setup.${ext} && electron-builder --win portable --config.artifactName=Codex-Network-Selector-${version}-Windows-Portable.${ext}",
-    "pack:mac": "electron-builder --mac dmg && electron-builder --mac zip",
+    "pack:win": "electron-builder --win nsis --publish never --config.artifactName=Codex-Network-Selector-${version}-Windows-Setup.${ext} && electron-builder --win portable --publish never --config.artifactName=Codex-Network-Selector-${version}-Windows-Portable.${ext}",
+    "pack:mac": "electron-builder --mac dmg --publish never && electron-builder --mac zip --publish never",
     "dist": "electron-builder -mw"
   },
   "dependencies": {
