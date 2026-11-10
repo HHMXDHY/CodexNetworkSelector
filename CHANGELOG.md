@@ -2,6 +2,12 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [1.0.1] - 2026-11-10
+
+### 修复
+- 修复 macOS Bash 提前展开 electron-builder 文件名模板、导致 DMG 构建失败的问题。
+- macOS DMG 与 ZIP 统一使用 electron-builder 原生跨平台文件名模板。
+
 ## [1.0.0] - 2026-11-06
 
 ### 新增
